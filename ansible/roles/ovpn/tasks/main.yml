@@ -1,0 +1,40 @@
+---
+- name: Create OpenVPN client configuration directory
+  file:
+    path: /etc/openvpn/client
+    state: directory
+    mode: '0755'
+
+- name: Generate client configuration
+  shell: >
+    docker run -v openvpn_data:/etc/openvpn --rm kylemanna/openvpn
+    ovpn_genconfig -u udp://{{ ansible_default_ipv4.address }}:{{ openvpn_port }}
+  args:
+    creates: /etc/openvpn/client/config.ovpn
+
+- name: Initialize the PKI and CA
+  shell: >
+    docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn
+    ovpn_initpki nopass
+  args:
+    creates: /etc/openvpn/pki
+
+- name: Generate client certificate
+  shell: >
+    docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn
+    easyrsa build-client-full {{ openvpn_client_name }} nopass
+  args:
+    creates: /etc/openvpn/pki/issued/{{ openvpn_client_name }}.crt
+
+- name: Retrieve client configuration
+  shell: >
+    docker run -v openvpn_data:/etc/openvpn --rm kylemanna/openvpn
+    ovpn_getclient {{ openvpn_client_name }} > /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
+  args:
+    creates: /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
+  register: ovpn_file_content
+
+- name: Save .ovpn file to localhost
+  copy:
+    content: "{{ ovpn_file_content.stdout }}"
+    dest: "./{{ openvpn_client_name }}.ovpn"

@@ -1,0 +1,35 @@
+---
+- name: Generate a random port for SSH
+  set_fact:
+    ssh_new_port: "{{ lookup('random', 'integer', 49000, 65000) }}"
+
+- name: Change SSH port
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port '
+    line: "Port {{ ssh_new_port }}"
+    validate: 'sshd -t'
+
+- name: Restart SSH service
+  service:
+    name: ssh
+    state: restarted
+
+- name: Allow new SSH port in iptables
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ ssh_new_port }}"
+    jump: ACCEPT
+
+- name: Save iptables rules
+  command: service netfilter-persistent save
+
+- name: Restart iptables-persistent service
+  service:
+    name: netfilter-persistent
+    state: restarted
+
+- name: Display new SSH port
+  debug:
+    msg: "SSH is now accessible on port {{ ssh_new_port }}"

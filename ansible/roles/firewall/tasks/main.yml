@@ -1,0 +1,49 @@
+---
+- name: Ensure iptables is installed
+  apt:
+    name: iptables
+    state: present
+    update_cache: yes
+
+- name: Ensure iptables-persistent is installed
+  apt:
+    name: iptables-persistent
+    state: present
+    update_cache: yes
+
+- name: Ensure dnsmasq is installed
+  apt:
+    name: dnsmasq
+    state: present
+    update_cache: yes
+
+- name: Configure iptables to allow established connections and OpenVPN UDP port
+  iptables:
+    chain: INPUT
+    protocol: udp
+    source_port: "{{ openvpn_port }}"
+    jump: ACCEPT
+
+- name: Allow established and related connections
+  iptables:
+    chain: INPUT
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+
+- name: Save iptables rules
+  command: service netfilter-persistent save
+
+- name: Restart iptables-persistent service
+  service:
+    name: netfilter-persistent
+    state: restarted
+
+- name: Create dnsmasq configuration file
+  template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+
+- name: Restart dnsmasq service
+  service:
+    name: dnsmasq
+    state: restarted

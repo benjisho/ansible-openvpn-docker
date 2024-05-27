@@ -1,0 +1,20 @@
+# Configuration file for dnsmasq
+
+# Listen on this specific port
+port=53
+
+# Bind to the loopback interface
+interface=lo
+
+# DNS server
+server=8.8.8.8
+server=8.8.4.4
+
+# Prevents dnsmasq from forwarding requests to upstream nameservers
+no-resolv
+
+# Never forward plain names
+domain-needed
+
+# Never forward addresses in the non-routed address spaces
+bogus-priv

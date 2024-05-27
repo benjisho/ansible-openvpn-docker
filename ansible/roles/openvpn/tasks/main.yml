@@ -1,0 +1,7 @@
+---
+- name: Generate random port for OpenVPN
+  set_fact:
+    openvpn_port: "{{ 49000 | random(seed=inventory_hostname) | int + (65000-49000) }}"
+
+- name: Pull and run OpenVPN Docker container
+  command: docker-compose -f /srv/docker-compose.yml up -d
