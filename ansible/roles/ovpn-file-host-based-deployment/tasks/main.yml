@@ -1,0 +1,21 @@
+---
+- name: Generate client configuration
+  command: >
+    easyrsa build-client-full {{ openvpn_client_name }} nopass
+  args:
+    creates: /etc/openvpn/pki/issued/{{ openvpn_client_name }}.crt
+
+- name: Retrieve client configuration
+  shell: >
+    cat /etc/openvpn/pki/ca.crt /etc/openvpn/pki/issued/{{ openvpn_client_name }}.crt /etc/openvpn/pki/private/{{ openvpn_client_name }}.key > /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
+  register: ovpn_file_content
+
+- name: Create client configuration template
+  template:
+    src: client.ovpn.j2
+    dest: /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
+
+- name: Save .ovpn file to localhost
+  copy:
+    src: /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
+    dest: "./{{ openvpn_client_name }}.ovpn"

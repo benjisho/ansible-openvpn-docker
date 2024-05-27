@@ -1,0 +1,21 @@
+client
+dev tun
+proto udp
+remote {{ ansible_default_ipv4.address }} {{ openvpn_port }}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+cipher AES-256-CBC
+verb 3
+
+<ca>
+{{ lookup('file', '/etc/openvpn/pki/ca.crt') }}
+</ca>
+<cert>
+{{ lookup('file', '/etc/openvpn/pki/issued/' + openvpn_client_name + '.crt') }}
+</cert>
+<key>
+{{ lookup('file', '/etc/openvpn/pki/private/' + openvpn_client_name + '.key') }}
+</key>

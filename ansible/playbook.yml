@@ -1,12 +1,43 @@
 ---
 - hosts: localhost
   become: yes
+
+  vars_prompt:
+    - name: "openvpn_installation_type"
+      prompt: "What type of OpenVPN installation do you want? (docker/host)"
+      private: no
+      choices:
+        - docker
+        - host
+
   vars:
     openvpn_client_name: myclient
+
+  pre_tasks:
+    - name: Ensure required packages are installed
+      include_role:
+        name: install-requirements
+
+    - name: Generate random port for OpenVPN
+      set_fact:
+        openvpn_port: "{{ 49152 | random(seed=inventory_hostname) | int + (65535-49152) }}"
+
   roles:
-    - install-requirements
-    - docker
-    - openvpn
-    - ovpn-file
-    - firewall
-    - ssh
+    - role: docker
+      when: openvpn_installation_type == 'docker'
+
+    - role: openvpn-docker-based
+      when: openvpn_installation_type == 'docker'
+
+    - role: ovpn-file-docker-based-deployment
+      when: openvpn_installation_type == 'docker'
+
+    - role: openvpn-host-based
+      when: openvpn_installation_type == 'host'
+
+    - role: ovpn-host-based-deployment
+      when: openvpn_installation_type == 'host'
+
+    - role: firewall
+
+    - role: ssh

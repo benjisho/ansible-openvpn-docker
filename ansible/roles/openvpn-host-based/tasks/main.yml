@@ -1,0 +1,17 @@
+---
+- name: Ensure OpenVPN is installed
+  apt:
+    name: openvpn
+    state: present
+    update_cache: yes
+
+- name: Configure OpenVPN
+  template:
+    src: server.conf.j2
+    dest: /etc/openvpn/server.conf
+
+- name: Start and enable OpenVPN service
+  service:
+    name: openvpn@server
+    state: started
+    enabled: yes
