@@ -19,6 +19,16 @@
 - name: Move EasyRSA directory
   command: mv /etc/openvpn/EasyRSA-3.0.8 /etc/openvpn/easy-rsa
 
+- name: Generate random passphrase for CA
+  set_fact:
+    ca_passphrase: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters') }}"
+
+- name: Save CA passphrase to file
+  copy:
+    content: "{{ ca_passphrase }}"
+    dest: /etc/openvpn/easy-rsa/ca_passphrase.txt
+    mode: '0600'
+
 - name: Initialize the PKI directory
   command: ./easyrsa init-pki
   args:
@@ -31,6 +41,8 @@
   environment:
     EASYRSA_BATCH: "1"
     EASYRSA_REQ_CN: "OpenVPN-CA"
+    EASYRSA_PASSIN: "pass:{{ ca_passphrase }}"
+    EASYRSA_PASSOUT: "pass:{{ ca_passphrase }}"
 
 - name: Generate server certificate and key
   command: ./easyrsa build-server-full server nopass
@@ -39,6 +51,7 @@
   environment:
     EASYRSA_BATCH: "1"
     EASYRSA_REQ_CN: "server"
+    EASYRSA_PASSIN: "pass:{{ ca_passphrase }}"
 
 - name: Generate Diffie-Hellman parameters
   command: ./easyrsa gen-dh
@@ -49,34 +62,35 @@
   copy:
     src: /etc/openvpn/easy-rsa/pki/issued/server.crt
     dest: /etc/openvpn/server.crt
-  notify: Restart OpenVPN
 
 - name: Copy server key
   copy:
     src: /etc/openvpn/easy-rsa/pki/private/server.key
     dest: /etc/openvpn/server.key
-  notify: Restart OpenVPN
 
 - name: Copy CA certificate
   copy:
     src: /etc/openvpn/easy-rsa/pki/ca.crt
     dest: /etc/openvpn/ca.crt
-  notify: Restart OpenVPN
 
 - name: Copy DH parameters
   copy:
     src: /etc/openvpn/easy-rsa/pki/dh.pem
     dest: /etc/openvpn/dh.pem
-  notify: Restart OpenVPN
 
 - name: Configure OpenVPN
   template:
     src: server.conf.j2
     dest: /etc/openvpn/server.conf
-  notify: Restart OpenVPN
 
 - name: Enable and start OpenVPN service
   systemd:
     name: openvpn@server
     state: started
     enabled: yes
+
+- name: Restart OpenVPN service
+  systemd:
+    name: openvpn@server
+    state: restarted
+    when: restart_openvpn is defined and restart_openvpn

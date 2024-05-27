@@ -7,6 +7,7 @@
   environment:
     EASYRSA_BATCH: "1"
     EASYRSA_REQ_CN: "{{ openvpn_client_name }}"
+    EASYRSA_PASSIN: "pass:{{ ca_passphrase }}"
 
 - name: Create client configuration directory
   file:
