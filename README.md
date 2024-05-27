@@ -30,7 +30,7 @@ openvpn-docker-ansible/
 │       ├── ovpn-file-docker-based-deployment/
 │       │   ├── tasks/
 │       │   │   └── main.yml
-│       ├── ovpn-host-based-deployment/
+│       ├── ovpn-file-host-based-deployment/
 │       │   ├── tasks/
 │       │   │   └── main.yml
 │       │   └── templates/
