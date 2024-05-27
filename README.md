@@ -7,7 +7,7 @@ This repository provides an automated way to set up OpenVPN using Docker and Doc
 Your updated repository structure will look like this:
 
 ```
-openvpn-docker-ansible/
+ansible-openvpn-docker/
 ├── ansible/
 │   ├── playbook.yml
 │   └── roles/
@@ -48,8 +48,8 @@ openvpn-docker-ansible/
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/yourusername/openvpn-docker-ansible.git
-   cd openvpn-docker-ansible
+   git clone https://github.com/benjisho/ansible-openvpn-docker.git
+   cd ansible-openvpn-docker
    ```
 
 2. Install required Python packages:
