@@ -1,9 +1,12 @@
 ---
 - name: Generate client certificate and key
-  command: /etc/openvpn/easy-rsa/easyrsa build-client-full {{ openvpn_client_name }} nopass
+  command: ./easyrsa build-client-full {{ openvpn_client_name }} nopass
   args:
     chdir: /etc/openvpn/easy-rsa
     creates: /etc/openvpn/easy-rsa/pki/issued/{{ openvpn_client_name }}.crt
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "{{ openvpn_client_name }}"
 
 - name: Create client configuration directory
   file:

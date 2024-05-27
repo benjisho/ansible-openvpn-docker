@@ -20,22 +20,28 @@
   command: mv /etc/openvpn/EasyRSA-3.0.8 /etc/openvpn/easy-rsa
 
 - name: Initialize the PKI directory
-  command: /etc/openvpn/easy-rsa/easyrsa init-pki
+  command: ./easyrsa init-pki
   args:
     chdir: /etc/openvpn/easy-rsa
 
 - name: Build CA
-  command: /etc/openvpn/easy-rsa/easyrsa build-ca nopass
+  command: ./easyrsa build-ca nopass
   args:
     chdir: /etc/openvpn/easy-rsa
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "OpenVPN-CA"
 
 - name: Generate server certificate and key
-  command: /etc/openvpn/easy-rsa/easyrsa build-server-full server nopass
+  command: ./easyrsa build-server-full server nopass
   args:
     chdir: /etc/openvpn/easy-rsa
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "server"
 
 - name: Generate Diffie-Hellman parameters
-  command: /etc/openvpn/easy-rsa/easyrsa gen-dh
+  command: ./easyrsa gen-dh
   args:
     chdir: /etc/openvpn/easy-rsa
 
