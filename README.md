@@ -7,33 +7,45 @@ This repository provides an automated way to set up OpenVPN using Docker and Doc
 Your updated repository structure will look like this:
 
 ```
-ansible-openvpn-docker/
+openvpn-docker-ansible/
 ├── ansible/
 │   ├── playbook.yml
 │   └── roles/
+│       ├── install-requirements/
+│       │   ├── tasks/
+│       │   │   └── main.yml
 │       ├── docker/
 │       │   ├── tasks/
 │       │   │   └── main.yml
 │       │   └── templates/
 │       │       └── docker-compose.yml.j2
-│       ├── openvpn/
+│       ├── openvpn-docker-based/
 │       │   ├── tasks/
 │       │   │   └── main.yml
-│       ├── ovpn-file/
+│       ├── openvpn-host-based/
 │       │   ├── tasks/
 │       │   │   └── main.yml
+│       │   └── templates/
+│       │       └── server.conf.j2
+│       ├── ovpn-file-docker-based-deployment/
+│       │   ├── tasks/
+│       │   │   └── main.yml
+│       ├── ovpn-host-based-deployment/
+│       │   ├── tasks/
+│       │   │   └── main.yml
+│       │   └── templates/
+│       │       └── client.ovpn.j2
 │       ├── firewall/
 │       │   ├── tasks/
 │       │   │   └── main.yml
 │       │   └── templates/
 │       │       └── dnsmasq.conf.j2
-│       └── sshd/
+│       └── ssh/
 │           ├── tasks/
 │           │   └── main.yml
-│           └── templates/
-│               └── sshd_config.j2
 ├── README.md
 └── requirements.txt
+
 ```
 
 
@@ -41,7 +53,7 @@ ansible-openvpn-docker/
 
 - Git
 - Ansible
-- Python and pip
+- Python
 
 ## Setup Instructions
 
@@ -52,19 +64,15 @@ ansible-openvpn-docker/
    cd ansible-openvpn-docker
    ```
 
-2. Install required Python packages:
-
-   ```sh
-   pip install -r requirements.txt
-   ```
-
-3. Run the Ansible playbook:
+2. Run the Ansible playbook:
 
    ```sh
    ansible-playbook ansible/playbook.yml
    ```
-
-The OpenVPN server will be set up on a random UDP port between 49000 and 65000. The client configuration file (`.ovpn`) will be generated and saved in the repository's root directory. Additionally, SSHD will be configured to run on a random port, and the necessary firewall rules will be applied.
+   - During the playbook execution, you will be prompted to choose the type of OpenVPN installation (docker/host).
+   - The OpenVPN server will be set up on a random UDP port between 49152 and 65535.
+   - The client configuration file (`.ovpn`) will be generated and saved in the repository's root directory.
+   - Additionally, SSHD will be configured to run on a random port, and the necessary firewall rules will be applied.
 
 ## Client Configuration
 
