@@ -80,9 +80,3 @@
     name: openvpn@server
     state: started
     enabled: yes
-
-handlers:
-  - name: Restart OpenVPN
-    service:
-      name: openvpn@server
-      state: restarted
