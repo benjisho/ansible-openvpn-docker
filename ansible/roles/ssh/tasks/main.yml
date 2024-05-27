@@ -1,7 +1,7 @@
 ---
 - name: Generate a random port for SSH
   set_fact:
-    ssh_new_port: "{{ lookup('random', 'integer', 49000, 65000) }}"
+    ssh_new_port: "{{ lookup('random', 'integer', 49152, 65535) }}"
 
 - name: Change SSH port
   lineinfile:
