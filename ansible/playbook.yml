@@ -4,8 +4,9 @@
   vars:
     openvpn_client_name: myclient
   roles:
-    - docker-role
+    - install-requirements
+    - docker
     - openvpn
-    - client-ovpn-file-role
+    - ovpn-file
     - firewall
     - ssh
