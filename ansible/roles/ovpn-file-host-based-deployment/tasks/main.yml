@@ -2,7 +2,8 @@
 - name: Generate client certificate and key
   command: /etc/openvpn/easy-rsa/easyrsa build-client-full {{ openvpn_client_name }} nopass
   args:
-    creates: /etc/openvpn/pki/issued/{{ openvpn_client_name }}.crt
+    chdir: /etc/openvpn/easy-rsa
+    creates: /etc/openvpn/easy-rsa/pki/issued/{{ openvpn_client_name }}.crt
 
 - name: Create client configuration directory
   file:
@@ -12,9 +13,9 @@
 
 - name: Retrieve client configuration
   shell: |
-    cat /etc/openvpn/pki/ca.crt \
-        /etc/openvpn/pki/issued/{{ openvpn_client_name }}.crt \
-        /etc/openvpn/pki/private/{{ openvpn_client_name }}.key > /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
+    cat /etc/openvpn/easy-rsa/pki/ca.crt \
+        /etc/openvpn/easy-rsa/pki/issued/{{ openvpn_client_name }}.crt \
+        /etc/openvpn/easy-rsa/pki/private/{{ openvpn_client_name }}.key > /etc/openvpn/client/{{ openvpn_client_name }}.ovpn
   register: ovpn_file_content
 
 - name: Create client configuration template

@@ -22,44 +22,44 @@
 - name: Initialize the PKI directory
   command: /etc/openvpn/easy-rsa/easyrsa init-pki
   args:
-    creates: /etc/openvpn/pki
+    chdir: /etc/openvpn/easy-rsa
 
 - name: Build CA
   command: /etc/openvpn/easy-rsa/easyrsa build-ca nopass
   args:
-    creates: /etc/openvpn/pki/ca.crt
+    chdir: /etc/openvpn/easy-rsa
 
 - name: Generate server certificate and key
   command: /etc/openvpn/easy-rsa/easyrsa build-server-full server nopass
   args:
-    creates: /etc/openvpn/pki/issued/server.crt
+    chdir: /etc/openvpn/easy-rsa
 
 - name: Generate Diffie-Hellman parameters
   command: /etc/openvpn/easy-rsa/easyrsa gen-dh
   args:
-    creates: /etc/openvpn/pki/dh.pem
+    chdir: /etc/openvpn/easy-rsa
 
 - name: Copy server certificates and keys
   copy:
-    src: /etc/openvpn/pki/issued/server.crt
+    src: /etc/openvpn/easy-rsa/pki/issued/server.crt
     dest: /etc/openvpn/server.crt
   notify: Restart OpenVPN
 
 - name: Copy server key
   copy:
-    src: /etc/openvpn/pki/private/server.key
+    src: /etc/openvpn/easy-rsa/pki/private/server.key
     dest: /etc/openvpn/server.key
   notify: Restart OpenVPN
 
 - name: Copy CA certificate
   copy:
-    src: /etc/openvpn/pki/ca.crt
+    src: /etc/openvpn/easy-rsa/pki/ca.crt
     dest: /etc/openvpn/ca.crt
   notify: Restart OpenVPN
 
 - name: Copy DH parameters
   copy:
-    src: /etc/openvpn/pki/dh.pem
+    src: /etc/openvpn/easy-rsa/pki/dh.pem
     dest: /etc/openvpn/dh.pem
   notify: Restart OpenVPN
 
