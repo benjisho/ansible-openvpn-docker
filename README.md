@@ -19,7 +19,7 @@ ansible-openvpn-docker/
 │       ├── openvpn/
 │       │   ├── tasks/
 │       │   │   └── main.yml
-│       ├── ovpn/
+│       ├── ovpn-file/
 │       │   ├── tasks/
 │       │   │   └── main.yml
 │       ├── firewall/
