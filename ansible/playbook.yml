@@ -1,14 +1,11 @@
 ---
 - hosts: localhost
-  become: yes
+  become: true
 
   vars_prompt:
     - name: "openvpn_installation_type"
       prompt: "What type of OpenVPN installation do you want? (docker/host)"
-      private: no
-      choices:
-        - docker
-        - host
+      private: false
 
   vars:
     openvpn_client_name: myclient
@@ -35,7 +32,7 @@
     - role: openvpn-host-based
       when: openvpn_installation_type == 'host'
 
-    - role: ovpn-host-based-deployment
+    - role: ovpn-file-host-based-deployment
       when: openvpn_installation_type == 'host'
 
     - role: firewall
