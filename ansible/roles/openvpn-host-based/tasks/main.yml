@@ -35,18 +35,22 @@
     chdir: /etc/openvpn/easy-rsa
 
 - name: Build CA
-  command: ./easyrsa --batch --req-cn="OpenVPN-CA" build-ca nopass
+  shell: |
+    export EASYRSA_BATCH=1
+    export EASYRSA_REQ_CN="OpenVPN-CA"
+    export EASYRSA_PASSOUT="pass:{{ ca_passphrase }}"
+    ./easyrsa build-ca nopass
   args:
     chdir: /etc/openvpn/easy-rsa
-  environment:
-    EASYRSA_PASSOUT: "pass:{{ ca_passphrase }}"
 
 - name: Generate server certificate and key
-  command: ./easyrsa --batch --req-cn="server" build-server-full server nopass
+  shell: |
+    export EASYRSA_BATCH=1
+    export EASYRSA_REQ_CN="server"
+    export EASYRSA_PASSIN="pass:{{ ca_passphrase }}"
+    ./easyrsa build-server-full server nopass
   args:
     chdir: /etc/openvpn/easy-rsa
-  environment:
-    EASYRSA_PASSIN: "pass:{{ ca_passphrase }}"
 
 - name: Generate Diffie-Hellman parameters
   command: ./easyrsa gen-dh
