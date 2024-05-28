@@ -1,12 +1,9 @@
 ---
-- name: Generate client certificate and key using expect
-  expect:
-    command: ./easyrsa build-client-full {{ openvpn_client_name }} nopass
+- name: Generate client certificate and key
+  command: ./easyrsa --batch --req-cn="{{ openvpn_client_name }}" --passin=pass:{{ ca_passphrase }} build-client-full {{ openvpn_client_name }} nopass
+  args:
     chdir: /etc/openvpn/easy-rsa
-    responses:
-      "Enter PEM pass phrase:" "{{ ca_passphrase }}\n"
-      "Verifying - Enter PEM pass phrase:" "{{ ca_passphrase }}\n"
-      "Common Name (eg: your user, host, or server name) [{{ openvpn_client_name }}]:": "{{ openvpn_client_name }}\n"
+    creates: /etc/openvpn/easy-rsa/pki/issued/{{ openvpn_client_name }}.crt
 
 - name: Create client configuration directory
   file:
