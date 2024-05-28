@@ -1,86 +1,130 @@
 ---
-- name: Ensure OpenVPN is installed
+- name: Ensure required packages are installed
   apt:
-    name: openvpn
+    name:
+      - openvpn
+      - wget
+      - openssl
     state: present
     update_cache: yes
 
+- name: Determine the permissionless group
+  command: grep -qs "^nogroup:" /etc/group
+  register: nogroup_check
+  ignore_errors: yes
+
+- name: Set permissionless group
+  set_fact:
+    NOGROUP: "{{ 'nogroup' if nogroup_check.rc == 0 else 'nobody' }}"
+
+- name: Ensure EasyRSA directory exists
+  file:
+    path: /etc/openvpn/easy-rsa
+    state: directory
+
 - name: Download EasyRSA
   get_url:
-    url: "https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz"
-    dest: /tmp/EasyRSA-3.0.8.tgz
+    url: "https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz"
+    dest: /tmp/easy-rsa.tgz
 
 - name: Extract EasyRSA
   unarchive:
-    src: /tmp/EasyRSA-3.0.8.tgz
-    dest: /etc/openvpn
+    src: /tmp/easy-rsa.tgz
+    dest: /etc/openvpn/easy-rsa
     remote_src: yes
+    extra_opts: ["--strip-components=1", "--no-same-owner"]
 
-- name: Move EasyRSA directory
-  command: mv /etc/openvpn/EasyRSA-3.0.8 /etc/openvpn/easy-rsa
+- name: Remove EasyRSA tar file
+  file:
+    path: /tmp/easy-rsa.tgz
+    state: absent
 
-- name: Generate random passphrase for CA
-  set_fact:
-    ca_passphrase: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters') }}"
-
-- name: Save CA passphrase to file
+- name: Set EasyRSA vars for EC certificates
   copy:
-    content: "{{ ca_passphrase }}"
-    dest: /etc/openvpn/easy-rsa/ca_passphrase.txt
-    mode: '0600'
+    dest: /etc/openvpn/easy-rsa/vars
+    content: |
+      set_var EASYRSA_ALGO ec
+      set_var EASYRSA_CURVE secp384r1
+  when: cert_type == "1"
+
+- name: Set EasyRSA vars for RSA certificates
+  copy:
+    dest: /etc/openvpn/easy-rsa/vars
+    content: |
+      set_var EASYRSA_KEY_SIZE 2048
+  when: cert_type == "2"
+
+- name: Generate random identifier for CN and server name
+  set_fact:
+    SERVER_CN: "cn_{{ lookup('password', '/dev/null', length=16, chars=ascii_letters + digits) }}"
+    SERVER_NAME: "server_{{ lookup('password', '/dev/null', length=16, chars=ascii_letters + digits) }}"
+
+- name: Save generated CN and server name
+  copy:
+    dest: /etc/openvpn/easy-rsa/SERVER_CN_GENERATED
+    content: "{{ SERVER_CN }}"
+
+- name: Save generated server name
+  copy:
+    dest: /etc/openvpn/easy-rsa/SERVER_NAME_GENERATED
+    content: "{{ SERVER_NAME }}"
 
 - name: Initialize the PKI directory
   command: ./easyrsa init-pki
   args:
     chdir: /etc/openvpn/easy-rsa
 
-- name: Build CA using expect
-  expect:
-    command: ./easyrsa build-ca nopass
-    chdir: /etc/openvpn/easy-rsa
-    responses:
-      'Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
-      'Verifying - Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
-      'Common Name (eg: your user, host, or server name) [Easy-RSA CA]:': "OpenVPN-CA\n"
-
-- name: Generate server certificate and key using expect
-  expect:
-    command: ./easyrsa build-server-full server nopass
-    chdir: /etc/openvpn/easy-rsa
-    responses:
-      'Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
-      'Verifying - Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
-      'Common Name (eg: your user, host, or server name) [server]:': "server\n"
-
-- name: Generate Diffie-Hellman parameters
-  command: ./easyrsa gen-dh
+- name: Build CA using EasyRSA
+  command: ./easyrsa --batch --req-cn="{{ SERVER_CN }}" build-ca nopass
   args:
     chdir: /etc/openvpn/easy-rsa
 
-- name: Copy server certificates and keys
-  copy:
-    src: /etc/openvpn/easy-rsa/pki/issued/server.crt
-    dest: /etc/openvpn/server.crt
+- name: Generate DH parameters
+  command: openssl dhparam -out /etc/openvpn/easy-rsa/dh.pem 2048
+  when: dh_type == "2"
 
-- name: Copy server key
-  copy:
-    src: /etc/openvpn/easy-rsa/pki/private/server.key
-    dest: /etc/openvpn/server.key
+- name: Build server certificate using EasyRSA
+  command: ./easyrsa --batch build-server-full "{{ SERVER_NAME }}" nopass
+  args:
+    chdir: /etc/openvpn/easy-rsa
 
-- name: Copy CA certificate
-  copy:
-    src: /etc/openvpn/easy-rsa/pki/ca.crt
-    dest: /etc/openvpn/ca.crt
+- name: Generate CRL
+  command: EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+  args:
+    chdir: /etc/openvpn/easy-rsa
 
-- name: Copy DH parameters
-  copy:
-    src: /etc/openvpn/easy-rsa/pki/dh.pem
-    dest: /etc/openvpn/dh.pem
+- name: Generate tls-crypt key
+  command: openvpn --genkey --secret /etc/openvpn/tls-crypt.key
+  when: tls_sig == "1"
 
-- name: Configure OpenVPN
+- name: Generate tls-auth key
+  command: openvpn --genkey --secret /etc/openvpn/tls-auth.key
+  when: tls_sig == "2"
+
+- name: Move generated files
+  copy:
+    remote_src: yes
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "/etc/openvpn/easy-rsa/pki/ca.crt", dest: "/etc/openvpn/ca.crt" }
+    - { src: "/etc/openvpn/easy-rsa/pki/private/ca.key", dest: "/etc/openvpn/ca.key" }
+    - { src: "/etc/openvpn/easy-rsa/pki/issued/{{ SERVER_NAME }}.crt", dest: "/etc/openvpn/server.crt" }
+    - { src: "/etc/openvpn/easy-rsa/pki/private/{{ SERVER_NAME }}.key", dest: "/etc/openvpn/server.key" }
+    - { src: "/etc/openvpn/easy-rsa/pki/crl.pem", dest: "/etc/openvpn/crl.pem" }
+    - { src: "/etc/openvpn/easy-rsa/dh.pem", dest: "/etc/openvpn/dh.pem" }
+  when: dh_type == "2"
+
+- name: Make CRL readable by non-root users
+  file:
+    path: /etc/openvpn/crl.pem
+    mode: '0644'
+
+- name: Create OpenVPN server configuration
   template:
     src: server.conf.j2
     dest: /etc/openvpn/server.conf
+    mode: '0644'
 
 - name: Enable and start OpenVPN service
   systemd:
