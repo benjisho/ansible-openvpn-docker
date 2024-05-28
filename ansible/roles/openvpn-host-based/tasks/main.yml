@@ -34,23 +34,23 @@
   args:
     chdir: /etc/openvpn/easy-rsa
 
-- name: Build CA
-  shell: |
-    export EASYRSA_BATCH=1
-    export EASYRSA_REQ_CN="OpenVPN-CA"
-    export EASYRSA_PASSOUT="pass:{{ ca_passphrase }}"
-    ./easyrsa build-ca nopass
-  args:
+- name: Build CA using expect
+  expect:
+    command: ./easyrsa build-ca nopass
     chdir: /etc/openvpn/easy-rsa
+    responses:
+      'Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
+      'Verifying - Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
+      'Common Name (eg: your user, host, or server name) [Easy-RSA CA]:': "OpenVPN-CA\n"
 
-- name: Generate server certificate and key
-  shell: |
-    export EASYRSA_BATCH=1
-    export EASYRSA_REQ_CN="server"
-    export EASYRSA_PASSIN="pass:{{ ca_passphrase }}"
-    ./easyrsa build-server-full server nopass
-  args:
+- name: Generate server certificate and key using expect
+  expect:
+    command: ./easyrsa build-server-full server nopass
     chdir: /etc/openvpn/easy-rsa
+    responses:
+      'Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
+      'Verifying - Enter PEM pass phrase:': "{{ ca_passphrase }}\n"
+      'Common Name (eg: your user, host, or server name) [server]:': "server\n"
 
 - name: Generate Diffie-Hellman parameters
   command: ./easyrsa gen-dh
