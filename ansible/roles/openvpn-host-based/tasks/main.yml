@@ -9,9 +9,9 @@
     update_cache: yes
 
 - name: Determine the permissionless group
-  command: grep -qs "^nogroup:" /etc/group
+  command: grep -qs '^nogroup:' /etc/group
   register: nogroup_check
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Set permissionless group
   set_fact:
@@ -24,7 +24,7 @@
 
 - name: Download EasyRSA
   get_url:
-    url: "https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz"
+    url: https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz
     dest: /tmp/easy-rsa.tgz
 
 - name: Extract EasyRSA
@@ -32,7 +32,9 @@
     src: /tmp/easy-rsa.tgz
     dest: /etc/openvpn/easy-rsa
     remote_src: yes
-    extra_opts: ["--strip-components=1", "--no-same-owner"]
+    extra_opts:
+      - '--strip-components=1'
+      - '--no-same-owner'
 
 - name: Remove EasyRSA tar file
   file:
